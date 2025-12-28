@@ -1,0 +1,1 @@
+print("BOT IR SCALPING SIAP")
