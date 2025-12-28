@@ -4,7 +4,6 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 stats = json.load(open("stats.json"))
-
 win = stats["win"]
 loss = stats["loss"]
 total = stats["total"]
