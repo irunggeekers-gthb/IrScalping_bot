@@ -15,6 +15,7 @@ LIMIT = 200
 
 STATE_FILE = "state.json"
 STATS_FILE = "stats.json"
+TUNER_FILE = "tuner.json"
 
 # ================= UTIL =================
 def load_json(f, d):
@@ -63,19 +64,17 @@ def hh_hl(df):
         df["l"].iloc[-1] > df["l"].iloc[-2] > df["l"].iloc[-3]
     )
 
-def sideways(df):
-    return (df["atr"].iloc[-1] / df["c"].iloc[-1]) < 0.002
-
 # ================= ANALYZE =================
 def analyze(pair):
+    tuner = load_json(TUNER_FILE, {})
     state = load_json(STATE_FILE, {})
+
     if state.get(pair) == "ACTIVE":
         return None
 
     df_trend = indicators(get_candles(pair, TF_TREND))
     if df_trend is None:
         return None
-
     if df_trend.iloc[-1]["ema50"] <= df_trend.iloc[-1]["ema200"]:
         state[pair] = "RESET"
         save_json(STATE_FILE, state)
@@ -90,16 +89,19 @@ def analyze(pair):
     cond = [
         last["ema50"] > last["ema200"],
         last["c"] > last["ema50"],
-        58 <= last["rsi"] <= 68,
-        last["v"] > last["vol_ma"],
+        tuner["rsi_low"] <= last["rsi"] <= tuner["rsi_high"],
+        last["v"] > last["vol_ma"] * tuner["volume_mult"],
         hh_hl(df)
     ]
 
-    if sum(cond) < 4 or sideways(df) or last["rsi"] >= 75:
+    if sum(cond) < 4:
+        return None
+
+    if (last["atr"] / last["c"]) < tuner["sideways_ratio"]:
         return None
 
     entry = last["c"]
-    sl = entry - last["atr"] * 1.5
+    sl = entry - last["atr"] * tuner["atr_mult"]
     risk = entry - sl
     tp4 = entry + risk * 4
 
@@ -144,7 +146,7 @@ def main():
             pass
 
     if not signals:
-        send_telegram("🚫 *NO TRADE*\nMarket belum valid (filter PRO aktif)\nTF: 15M")
+        send_telegram("🚫 *NO TRADE*\nFilter ELITE aktif\nTF: 15M")
         return
 
     for s in signals:
