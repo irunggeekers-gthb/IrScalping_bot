@@ -1,1 +1,7 @@
-
+{
+  "rsi_low": 58,
+  "rsi_high": 68,
+  "atr_mult": 1.5,
+  "sideways_ratio": 0.002,
+  "volume_mult": 1.0
+}
